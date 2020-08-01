@@ -5,8 +5,8 @@
 
 import torch
 
-from .backbone import resnet, mobilenet, mnasnet, hrnet, xception
-from .meta_arch import DeepLabV3, DeepLabV3Plus, PanopticDeepLab
+from .backbone import resnet, mobilenet, mnasnet, hrnet
+from .meta_arch import DeepLabV3, DeepLabV3Plus, PanopticDeepLab, ClsDeepLab
 from .loss import RegularCE, OhemCE, DeepLabCE, L1Loss, MSELoss, CrossEntropyLoss
 
 
@@ -22,6 +22,7 @@ def build_segmentation_model_from_cfg(config):
         'deeplabv3': DeepLabV3,
         'deeplabv3plus': DeepLabV3Plus,
         'panoptic_deeplab': PanopticDeepLab,
+        'cls_deeplab' : ClsDeepLab,
     }
 
     model_cfg = {
@@ -72,6 +73,30 @@ def build_segmentation_model_from_cfg(config):
             offset_loss=build_loss_from_cfg(config.LOSS.OFFSET),
             offset_loss_weight=config.LOSS.OFFSET.WEIGHT,
         ),
+        'cls_deeplab': dict(
+            replace_stride_with_dilation=config.MODEL.BACKBONE.DILATION,
+            in_channels=config.MODEL.DECODER.IN_CHANNELS,
+            feature_key=config.MODEL.DECODER.FEATURE_KEY,
+            low_level_channels=config.MODEL.PANOPTIC_DEEPLAB.LOW_LEVEL_CHANNELS,
+            low_level_key=config.MODEL.PANOPTIC_DEEPLAB.LOW_LEVEL_KEY,
+            low_level_channels_project=config.MODEL.PANOPTIC_DEEPLAB.LOW_LEVEL_CHANNELS_PROJECT,
+            decoder_channels=config.MODEL.DECODER.DECODER_CHANNELS,
+            atrous_rates=config.MODEL.DECODER.ATROUS_RATES,
+            num_classes=config.DATASET.NUM_CLASSES,
+            has_instance=config.MODEL.PANOPTIC_DEEPLAB.INSTANCE.ENABLE,
+            instance_low_level_channels_project=config.MODEL.PANOPTIC_DEEPLAB.INSTANCE.LOW_LEVEL_CHANNELS_PROJECT,
+            instance_decoder_channels=config.MODEL.PANOPTIC_DEEPLAB.INSTANCE.DECODER_CHANNELS,
+            instance_head_channels=config.MODEL.PANOPTIC_DEEPLAB.INSTANCE.HEAD_CHANNELS,
+            instance_aspp_channels=config.MODEL.PANOPTIC_DEEPLAB.INSTANCE.ASPP_CHANNELS,
+            instance_num_classes=config.MODEL.PANOPTIC_DEEPLAB.INSTANCE.NUM_CLASSES,
+            instance_class_key=config.MODEL.PANOPTIC_DEEPLAB.INSTANCE.CLASS_KEY,
+            semantic_loss=build_loss_from_cfg(config.LOSS.SEMANTIC),
+            semantic_loss_weight=config.LOSS.SEMANTIC.WEIGHT,
+            center_loss=build_loss_from_cfg(config.LOSS.CENTER),
+            center_loss_weight=config.LOSS.CENTER.WEIGHT,
+            offset_loss=build_loss_from_cfg(config.LOSS.OFFSET),
+            offset_loss_weight=config.LOSS.OFFSET.WEIGHT,
+        ),
     }
 
     if config.MODEL.BACKBONE.META == 'resnet':
@@ -90,11 +115,6 @@ def build_segmentation_model_from_cfg(config):
     elif config.MODEL.BACKBONE.META == 'hrnet':
         backbone = hrnet.__dict__[config.MODEL.BACKBONE.NAME](
             pretrained=config.MODEL.BACKBONE.PRETRAINED,
-        )
-    elif config.MODEL.BACKBONE.META == 'xception':
-        backbone = xception.__dict__[config.MODEL.BACKBONE.NAME](
-            pretrained=config.MODEL.BACKBONE.PRETRAINED,
-            replace_stride_with_dilation=model_cfg[config.MODEL.META_ARCHITECTURE]['replace_stride_with_dilation']
         )
     else:
         raise ValueError('Unknown meta backbone {}, please first implement it.'.format(config.MODEL.BACKBONE.META))

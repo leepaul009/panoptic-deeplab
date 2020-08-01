@@ -37,9 +37,6 @@ def parse_args():
                         help='experiment configure file name',
                         required=True,
                         type=str)
-    # parser.add_argument("--cuda_ids", type=int, default=[0,1,2,3], nargs=4)
-    parser.add_argument("--cuda_start", type=int, default=0)
-    parser.add_argument("--cuda_num", type=int, default=1)
     parser.add_argument("--debug_log", type=int, default=0)
     parser.add_argument("--local_rank", type=int, default=0)
     parser.add_argument('opts',
@@ -55,13 +52,9 @@ def parse_args():
 
 def main():
     args = parse_args()
-
     # os.environ["CUDA_VISIBLE_DEVICES"] = ','.join(map(str, [4,5]))
-    cuda_ids = []
-    for idx in range(args.cuda_num):
-        cuda_ids.append(args.cuda_start + idx)
-    print("visible devices: {}".format(cuda_ids))
-    os.environ["CUDA_VISIBLE_DEVICES"] = ','.join(map(str, cuda_ids))
+    #print("visible devices: {}".format(args.cuda_ids))
+    #os.environ["CUDA_VISIBLE_DEVICES"] = ','.join(map(str, args.cuda_ids))
 
     logger = logging.getLogger('segmentation')
     if not logger.isEnabledFor(logging.INFO):  # setup_logger is not called
@@ -132,15 +125,10 @@ def main():
     if config.TRAIN.RESUME:
         model_state_file = os.path.join(config.OUTPUT_DIR, 'checkpoint.pth.tar')
         if os.path.isfile(model_state_file):
-            print("Train resume true: load file from ".format(model_state_file) )
-            checkpoint = torch.load( model_state_file, map_location=torch.device("cpu") )
+            checkpoint = torch.load(model_state_file)
             start_iter = checkpoint['start_iter']
             get_module(model, distributed).load_state_dict(checkpoint['state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer'])
-
-            checkpoint['lr_scheduler']['max_iters'] = config.TRAIN.MAX_ITER
-            checkpoint['lr_scheduler']['_last_lr'] = checkpoint['lr_scheduler']['base_lrs'].copy()
-
             lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
             logger.info('Loaded checkpoint (starting from iter {})'.format(checkpoint['start_iter']))
 

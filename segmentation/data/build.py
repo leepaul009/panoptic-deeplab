@@ -8,11 +8,12 @@ import logging
 import torch
 import numpy as np
 
-from .datasets import Cityscapes, CityscapesPanoptic, COCOPanoptic
+from .datasets import Cityscapes, CityscapesPanoptic, COCOPanoptic, PavDataset
 from . import samplers
 from segmentation.utils.comm import get_world_size
 from segmentation.utils.env import seed_all_rng
 
+import torchvision, os
 
 def build_dataset_from_cfg(config, is_train=True):
     """Builds dataset from configuration file.
@@ -27,6 +28,7 @@ def build_dataset_from_cfg(config, is_train=True):
         'cityscapes': Cityscapes,
         'cityscapes_panoptic': CityscapesPanoptic,
         'coco_panoptic': COCOPanoptic,
+        'pav_dataset' : PavDataset,
     }
 
     dataset_cfg = {
@@ -77,11 +79,46 @@ def build_dataset_from_cfg(config, is_train=True):
             small_instance_area=config.DATASET.SMALL_INSTANCE_AREA,
             small_instance_weight=config.DATASET.SMALL_INSTANCE_WEIGHT
         ),
+        'pav_dataset': dict(
+            root=config.DATASET.ROOT,
+            split=config.DATASET.TRAIN_SPLIT if is_train else config.DATASET.TEST_SPLIT,
+            is_train=is_train,
+            crop_size=config.DATASET.CROP_SIZE if is_train else config.TEST.CROP_SIZE,
+            mirror=config.DATASET.MIRROR,
+            min_scale=config.DATASET.MIN_SCALE,
+            max_scale=config.DATASET.MAX_SCALE,
+            scale_step_size=config.DATASET.SCALE_STEP_SIZE,
+            mean=config.DATASET.MEAN,
+            std=config.DATASET.STD,
+            semantic_only=config.DATASET.SEMANTIC_ONLY,
+            ignore_stuff_in_offset=config.DATASET.IGNORE_STUFF_IN_OFFSET,
+            small_instance_area=config.DATASET.SMALL_INSTANCE_AREA,
+            small_instance_weight=config.DATASET.SMALL_INSTANCE_WEIGHT
+        ),
     }
-
+    print("to create dataset: {}".format(config.DATASET.DATASET))
     dataset = dataset_map[config.DATASET.DATASET](
         **dataset_cfg[config.DATASET.DATASET]
     )
+    print("create dataset")
+    return dataset
+
+
+def build_dataset_from_cfg1(config, is_train=True):
+
+    train_dataset_path = os.path.join(config.DATASET.ROOT, 'train')
+    trans = torchvision.transforms.Compose([
+            # torchvision.transforms.RandomResizedCrop(input_image_size),
+            torchvision.transforms.RandomHorizontalFlip(),
+            # torchvision.transforms.ColorJitter(brightness=0.4,
+            #                       contrast=0.4,
+            #                       saturation=0.4,
+            #                       hue=0),
+            torchvision.transforms.ToTensor(),
+            torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225]),
+        ])
+    dataset = torchvision.datasets.ImageFolder(train_dataset_path, trans)
     return dataset
 
 
@@ -107,7 +144,10 @@ def build_train_loader_from_cfg(config):
     )
     images_per_worker = images_per_batch // num_workers
 
-    dataset = build_dataset_from_cfg(config, is_train=True)
+    # dataset = build_dataset_from_cfg(config, is_train=True)
+    print("To build dataset from cfg 1")
+    dataset = build_dataset_from_cfg1(config, is_train=True)
+    print("built dataset with len: {}".format( len(dataset) ))
 
     sampler_name = config.DATALOADER.SAMPLER_TRAIN
     logger = logging.getLogger(__name__)
@@ -127,7 +167,7 @@ def build_train_loader_from_cfg(config):
         batch_sampler=batch_sampler,
         worker_init_fn=worker_init_reset_seed,
     )
-
+    print("to return data_loader")
     return data_loader
 
 

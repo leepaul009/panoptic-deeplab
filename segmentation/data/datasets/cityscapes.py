@@ -80,7 +80,7 @@ class Cityscapes(BaseDataset):
         # Get image and annotation list.
         self.img_list = self._get_files('image', self.split)
         self.ann_list = self._get_files('label', self.split)
-
+        print( "## {} vs. def: {}".format(len(self.img_list), _CITYSCAPES_INFORMATION.splits_to_sizes[self.split]) )
         assert len(self) == _CITYSCAPES_INFORMATION.splits_to_sizes[self.split]
 
         self.transform = build_transforms(self, is_train)
@@ -98,6 +98,7 @@ class Cityscapes(BaseDataset):
         pattern = '*%s.%s' % (_POSTFIX_MAP[data], _DATA_FORMAT_MAP[data])
         search_files = os.path.join(
             self.root, _FOLDERS_MAP[data], dataset_split, '*', pattern)
+        print("search_files pattern: {}".format(search_files) )
         filenames = glob.glob(search_files)
         return sorted(filenames)
 

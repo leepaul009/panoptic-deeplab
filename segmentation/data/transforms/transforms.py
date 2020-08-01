@@ -80,6 +80,7 @@ class RandomScale(object):
         Raises:
             ValueError: min_scale_factor has unexpected value.
         """
+        print("get_random_scale...");
         if min_scale_factor < 0 or min_scale_factor > max_scale_factor:
             raise ValueError('Unexpected value of min_scale_factor.')
 
@@ -97,13 +98,16 @@ class RandomScale(object):
         return scale_factors[0]
 
     def __call__(self, image, label):
+        print("do random scale...")
         f_scale = self.get_random_scale(self.min_scale, self.max_scale, self.scale_step_size)
         # TODO: cv2 uses align_corner=False
         # TODO: use fvcore (https://github.com/facebookresearch/fvcore/blob/master/fvcore/transforms/transform.py#L377)
         image_dtype = image.dtype
         label_dtype = label.dtype
+        print("random scale, resize...")
         image = cv2.resize(image.astype(np.float), None, fx=f_scale, fy=f_scale, interpolation=cv2.INTER_LINEAR)
         label = cv2.resize(label.astype(np.float), None, fx=f_scale, fy=f_scale, interpolation=cv2.INTER_NEAREST)
+        print("random scale done...")
         return image.astype(image_dtype), label.astype(label_dtype)
 
 
@@ -126,6 +130,7 @@ class RandomCrop(object):
         self.random_pad = random_pad
 
     def __call__(self, image, label):
+        #print("do random crop...")
         img_h, img_w = image.shape[0], image.shape[1]
         # save dtype
         image_dtype = image.dtype
@@ -152,6 +157,7 @@ class RandomCrop(object):
         w_off = random.randint(0, img_w - self.crop_w)
         image = np.asarray(img_pad[h_off:h_off + self.crop_h, w_off:w_off + self.crop_w], np.float32)
         label = np.asarray(label_pad[h_off:h_off + self.crop_h, w_off:w_off + self.crop_w], np.float32)
+        # print("random crop done")
         return image.astype(image_dtype), label.astype(label_dtype)
 
 
@@ -165,6 +171,7 @@ class RandomHorizontalFlip(object):
         self.prob = prob
 
     def __call__(self, image, label):
+        # print("do random horizontal flip...")
         if random.random() < self.prob:
             # https://discuss.pytorch.org/t/torch-from-numpy-not-support-negative-strides/3663
             image = image[:, ::-1].copy()

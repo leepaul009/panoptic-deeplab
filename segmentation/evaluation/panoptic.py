@@ -3,8 +3,6 @@
 # Modified by Bowen Cheng (bcheng9@illinois.edu)
 # ------------------------------------------------------------------------------
 
-import contextlib
-import io
 import logging
 from collections import OrderedDict
 import os
@@ -120,8 +118,7 @@ class CityscapesPanopticEvaluator:
         with PathManager.open(self._predictions_json, "w") as f:
             f.write(json.dumps(json_data))
 
-        with contextlib.redirect_stdout(io.StringIO()):
-            results = cityscapes_eval.evaluatePanoptic(gt_json_file, gt_folder, pred_json_file, pred_folder, resultsFile)
+        results = cityscapes_eval.evaluatePanoptic(gt_json_file, gt_folder, pred_json_file, pred_folder, resultsFile)
 
         self._logger.info(results)
         return results

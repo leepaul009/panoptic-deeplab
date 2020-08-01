@@ -23,6 +23,7 @@ SOFTWARE.
 """
 import os
 import logging
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.models.utils import load_state_dict_from_url
@@ -499,9 +500,16 @@ def _hrnet(arch, pretrained, progress, **kwargs):
         else:
             model_url = model_urls[arch]
 
-        state_dict = load_state_dict_from_url(model_url,
+        model_state_file = os.path.join("./pretrain", 'hrnetv2_w48_imagenet_pretrained.pth')
+        if os.path.isfile(model_state_file):
+            print("exist pre-trained model: {}".format(model_state_file))
+            state_dict = torch.load(model_state_file)
+            
+            model.load_state_dict(state_dict, strict=False)
+        else:
+            state_dict = load_state_dict_from_url(model_url,
                                               progress=progress)
-        model.load_state_dict(state_dict, strict=False)
+            model.load_state_dict(state_dict, strict=False)
     return model
 
 

@@ -33,11 +33,11 @@ def build_transforms(dataset, is_train=True):
 
     transforms = T.Compose(
         [
-            T.RandomScale(
-                min_scale,
-                max_scale,
-                scale_step_size
-            ),
+            #T.RandomScale(
+            #    min_scale,
+            #    max_scale,
+            #    scale_step_size
+            #),
             T.RandomCrop(
                 crop_h,
                 crop_w,

@@ -2,7 +2,7 @@
 # Reference: https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
 # Modified by Bowen Cheng (bcheng9@illinois.edu)
 # ------------------------------------------------------------------------------
-
+import torch, os
 import torch.nn as nn
 from torchvision.models.utils import load_state_dict_from_url
 
@@ -24,6 +24,17 @@ model_urls = {
     'wide_resnet101_2': 'https://download.pytorch.org/models/wide_resnet101_2-32ee1156.pth',
 }
 
+model_pth_files = {
+    'resnet18': 'resnet18-5c106cde.pth',
+    'resnet34': 'resnet34-333f7ec4.pth',
+    'resnet50': 'resnet50-19c8e357.pth',
+    'resnet101': 'resnet101-5d3b4d8f.pth',
+    'resnet152': 'resnet152-b121ed2d.pth',
+    'resnext50_32x4d': 'resnext50_32x4d-7cdf4587.pth',
+    'resnext101_32x8d': 'resnext101_32x8d-8ba56ff5.pth', # target
+    'wide_resnet50_2': 'wide_resnet50_2-95faca4d.pth',
+    'wide_resnet101_2': 'wide_resnet101_2-32ee1156.pth',
+}
 
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
     """3x3 convolution with padding"""
@@ -205,17 +216,22 @@ class ResNet(nn.Module):
     def _forward_impl(self, x):
         outputs = {}
         # See note [TorchScript super()]
+        #print("input {}".format(x.shape) )
+
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
         outputs['stem'] = x
+        #print("stem {}".format(x.shape) )
 
         x = self.layer1(x)  # 1/4
         outputs['res2'] = x
+        #print("res2 {}".format(x.shape) )
 
         x = self.layer2(x)  # 1/8
         outputs['res3'] = x
+        #print("res3 {}".format(x.shape) )
 
         x = self.layer3(x)  # 1/16
         outputs['res4'] = x
@@ -232,9 +248,21 @@ class ResNet(nn.Module):
 def _resnet(arch, block, layers, pretrained, progress, **kwargs):
     model = ResNet(block, layers, **kwargs)
     if pretrained:
-        state_dict = load_state_dict_from_url(model_urls[arch],
-                                              progress=progress)
-        model.load_state_dict(state_dict, strict=False)
+        # state_dict = load_state_dict_from_url(model_urls[arch],
+        #                                       progress=progress)
+        # model.load_state_dict(state_dict, strict=False)
+
+        model_state_file = os.path.join("./pretrain", model_pth_files[arch])
+        if os.path.isfile(model_state_file):
+            print("exist pre-trained model: {}".format(model_state_file))
+            state_dict = torch.load(model_state_file)
+            
+            model.load_state_dict(state_dict, strict=False)
+        else:
+            state_dict = load_state_dict_from_url(model_urls[arch],
+                                                  progress=progress)
+            model.load_state_dict(state_dict, strict=False)
+
     return model
 
 

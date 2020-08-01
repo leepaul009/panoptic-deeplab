@@ -115,6 +115,9 @@ class WarmupPolyLR(torch.optim.lr_scheduler._LRScheduler):
         warmup_factor = _get_warmup_factor_at_iter(
             self.warmup_method, self.last_epoch, self.warmup_iters, self.warmup_factor
         )
+
+        print("base lrs length: {}".format(len(self.base_lrs)) )
+
         if self.constant_ending > 0 and warmup_factor == 1.:
             # Constant ending lr.
             if math.pow((1.0 - self.last_epoch / self.max_iters), self.power) < self.constant_ending:

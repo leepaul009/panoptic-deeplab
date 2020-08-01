@@ -86,6 +86,9 @@ def main():
             backend="nccl", init_method="env://",
         )
 
+    data_loader = build_train_loader_from_cfg(config)
+    data_loader_iter = iter(data_loader)
+
     # build model
     model = build_segmentation_model_from_cfg(config)
     logger.info("Model:\n{}".format(model))
@@ -101,11 +104,9 @@ def main():
             model, device_ids=[args.local_rank], output_device=args.local_rank
         )
 
-    data_loader = build_train_loader_from_cfg(config)
+    
     optimizer = build_optimizer(config, model)
     lr_scheduler = build_lr_scheduler(config, optimizer)
-
-    data_loader_iter = iter(data_loader)
 
     start_iter = 0
     max_iter = config.TRAIN.MAX_ITER
@@ -159,23 +160,33 @@ def main():
         for i in range(start_iter, max_iter):
             # data
             start_time = time.time()
+
             if args.debug_log:
                 print("to get data")
-            data = next(data_loader_iter)
+
+            # data = next(data_loader_iter)
+            image, target = next(data_loader_iter)
             if args.debug_log:
-                print("..{} {} {}".format(data['image'].size(), data['semantic'].size(), data['size'] ))
-            if args.debug_log:
+                # print("..{} {} {}".format(data['image'].size(), data['semantic'].size(), data['size'] ))
                 print("got data")
+
             if not distributed:
-                data = to_cuda(data, device)
+                # data = to_cuda(data, device)
+                image = to_cuda(image, device)
+                target = to_cuda(target, device)
             data_time.update(time.time() - start_time)
             
-            image = data.pop('image')
+            # image = data.pop('image')
+            # image, target = data
+            print( "image size {}, target size {}".format(image.size(), target.size()) )
             if args.debug_log:
                 print("to forward")
-            out_dict = model(image, data)
+
+            out_dict = model(image, target)
+
             if args.debug_log:
                 print("forward done")
+
             loss = out_dict['loss']
             optimizer.zero_grad()
             loss.backward()
